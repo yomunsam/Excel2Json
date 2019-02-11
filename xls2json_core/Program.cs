@@ -83,7 +83,7 @@ namespace xls2json_core
             JsonArray main_arr = new JsonArray();
 
             //逐行读取
-            for (int i = 0; i < sheet.LastRowNum; i++)
+            for (int i = 0; i <= sheet.LastRowNum; i++)
             {
                 var thisRow = sheet.GetRow(i);
                 if (thisRow != null)
