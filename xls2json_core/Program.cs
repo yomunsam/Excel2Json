@@ -45,10 +45,19 @@ namespace xls2json_core
             var main_sheet = LoadXlsFiles(path);
             var json = ParseSheet(main_sheet);
 
+            
+
+
 
             //写出
             Directory.CreateDirectory(Directory.GetParent(json_path).ToString());
+
+            if (File.Exists(json_path))
+            {
+                File.Delete(json_path);
+            }
             File.WriteAllText(json_path, json);
+            Console.WriteLine("写出到文件：" + json_path);
 
         }
 
@@ -78,12 +87,13 @@ namespace xls2json_core
 
         private static string ParseSheet(NPOI.SS.UserModel.ISheet sheet)
         {
-            Dictionary<int, S_FieldInfo> dict_fieldInfo = new Dictionary<int, S_FieldInfo>();
+            Dictionary<int, S_FieldInfo> dict_fieldInfo = new Dictionary<int, S_FieldInfo>(); //字段与index的对应字典
             JsonDocument main_json_doc = new JsonDocument();
             JsonArray main_arr = new JsonArray();
 
+            Console.WriteLine("表长度："+ sheet.LastRowNum);
             //逐行读取
-            for (int i = 0; i <= sheet.LastRowNum; i++)
+            for (int i = 0; i <= sheet.LastRowNum; i++) //注意这里的循环下标，实际上是超出一位的
             {
                 var thisRow = sheet.GetRow(i);
                 if (thisRow != null)
@@ -92,7 +102,7 @@ namespace xls2json_core
                     if (i == 0)
                     {
                         //字段描述行
-
+                        Console.WriteLine("读字段描述：");
                         for (int j = 0; j < thisRow.LastCellNum; j++)
                         {
 
@@ -109,10 +119,16 @@ namespace xls2json_core
 
                             var cell = thisRow.GetCell(j);
                             //读出描述字段
-                            fieldInfo.name = cell.ToString();
+                            if(cell != null)
+                            {
+                                Console.WriteLine("    >"+ cell.ToString());
+                                fieldInfo.name = cell.ToString();
+                                dict_fieldInfo.Remove(j);
+                                dict_fieldInfo.Add(j, fieldInfo);
+                            }
+                            
                             //Console.WriteLine(fieldInfo.name);
-                            dict_fieldInfo.Remove(j);
-                            dict_fieldInfo.Add(j, fieldInfo);
+                            
                         }
 
                     }
@@ -121,10 +137,11 @@ namespace xls2json_core
                     if (i == 1)
                     {
                         //字段key与类型行
-
+                        Console.WriteLine("读取定义行,共：" + thisRow.LastCellNum);
                         for (int j = 0; j < thisRow.LastCellNum; j++)
                         {
-
+                            Console.WriteLine("    -- 第" + j + "项");
+                            var flag = false;
                             S_FieldInfo fieldInfo;
                             if (dict_fieldInfo.ContainsKey(j))
                             {
@@ -138,93 +155,156 @@ namespace xls2json_core
 
                             var cell = thisRow.GetCell(j);
 
-                            var _str = cell.ToString();
+                            if (cell != null)
+                            {
+                                
+                                var _str = cell.ToString();
+                                Console.WriteLine("         -- str：" + _str);
 
-                            if (_str.Length < 2)
-                            {
-                                fieldInfo.type = E_FieldType.unknow;
-                                fieldInfo.key = "";
-                            }
-                            else
-                            {
-                                var head = _str.Substring(0, 2).ToLower();
-                                var content = _str.Substring(2, _str.Length - 2);
-                                //Console.WriteLine(content);
-                                switch (head)
+                                if (_str.Length < 2 || _str == string.Empty)
                                 {
-                                    case "n_":
-                                        fieldInfo.type = E_FieldType.num;
-                                        fieldInfo.key = content;
-                                        break;
-                                    case "b_":
-                                        fieldInfo.type = E_FieldType.boolean;
-                                        fieldInfo.key = content;
-                                        break;
-                                    case "s_":
-                                        fieldInfo.type = E_FieldType.str;
-                                        fieldInfo.key = content;
-                                        break;
-                                    default:
-                                        fieldInfo.type = E_FieldType.unknow;
-                                        fieldInfo.key = "";
-                                        break;
+                                    fieldInfo.type = E_FieldType.unknow;
+                                    fieldInfo.key = "";
+                                    Console.WriteLine("             -- 无效定义");
+
                                 }
+                                else
+                                {
+                                    var head = _str.Substring(0, 2).ToLower();
+                                    var content = _str.Substring(2, _str.Length - 2);
+                                    //Console.WriteLine("    >" + content);
+                                    //Console.WriteLine(content);
+                                    switch (head)
+                                    {
+                                        case "n_":
+                                            fieldInfo.type = E_FieldType.num;
+                                            fieldInfo.key = content;
+                                            flag = true;
+                                            Console.WriteLine("             -- 有效定义");
+
+                                            break;
+                                        case "b_":
+                                            fieldInfo.type = E_FieldType.boolean;
+                                            fieldInfo.key = content;
+                                            flag = true;
+                                            Console.WriteLine("             -- 有效定义");
+                                            break;
+                                        case "s_":
+                                            fieldInfo.type = E_FieldType.str;
+                                            fieldInfo.key = content;
+                                            flag = true;
+                                            Console.WriteLine("             -- 有效定义");
+                                            break;
+                                        default:
+                                            fieldInfo.type = E_FieldType.unknow;
+                                            fieldInfo.key = "";
+                                            flag = false;
+                                            Console.WriteLine("             -- 无效定义");
+                                            break;
+                                    }
+                                }
+
+                                
                             }
 
-                            dict_fieldInfo.Remove(j);
-                            dict_fieldInfo.Add(j, fieldInfo);
+                            if (dict_fieldInfo.ContainsKey(j))
+                            {
+                                dict_fieldInfo.Remove(j);
+                            }
+
+                            if (flag)
+                            {
+                                //Console.WriteLine("    有效定义：" + fieldInfo.key);
+                                dict_fieldInfo.Add(j, fieldInfo);
+                            }
+                            
+
                         }
 
+                        Console.WriteLine("读取到有效定义：" + dict_fieldInfo.Count + " 项");
+                    }
+                    
+                    if(i == 2)
+                    {
+                        Console.WriteLine("\n读取数据行。");
                     }
 
                     //正常行数据
                     if (i > 1)
                     {
+                        Console.WriteLine("\n");
                         JsonObject cur_obj = new JsonObject();
+                        //Console.WriteLine("count:" + dict_fieldInfo.Count);
 
+                        var flag = false; //只要下面的循环中，有任何一个字段不是空，则置为true
                         for (int j = 0; j < thisRow.LastCellNum; j++)
                         {
-                            var cell_str = thisRow.GetCell(j).ToString();
                             
-                            var f_info = dict_fieldInfo[j];
-                            //Console.WriteLine(f_info.key + ":" + cell_str);
-
-                            switch (f_info.type)
+                            var cell = thisRow.GetCell(j);
+                            //if (!dict_fieldInfo.ContainsKey(j))
+                            //{
+                            //    Console.WriteLine("不存在有效定义字段，index:" + j);
+                            //}
+                            if (cell != null && dict_fieldInfo.ContainsKey(j))
                             {
-                                case E_FieldType.boolean:
-                                    if (cell_str.ToLower() == "true")
+                                var cell_str = cell.ToString();
+                                var f_info = dict_fieldInfo[j];
+                                if (!string.IsNullOrEmpty(cell_str) && f_info.type != E_FieldType.unknow)
+                                {
+                                    Console.WriteLine(f_info.key + ":" + cell_str);
+                                    flag = true;
+                                    switch (f_info.type)
                                     {
-                                        //json_obj[f_info.key] = true;
-                                        cur_obj[f_info.key] = true;
+                                        case E_FieldType.boolean:
+
+                                            if (cell_str.ToLower() == "true")
+                                            {
+                                                //json_obj[f_info.key] = true;
+                                                cur_obj[f_info.key] = true;
+                                            }
+                                            else
+                                            {
+                                                //json_obj[f_info.key] = false;
+                                                cur_obj[f_info.key] = false;
+                                            }
+                                            break;
+                                        case E_FieldType.num:
+
+                                            if (cell_str.Contains('.'))
+                                            {
+                                                //有小数
+                                                //json_obj[f_info.key] = double.Parse(cell_str);
+                                                cur_obj[f_info.key] = double.Parse(cell_str);
+                                            }
+                                            else
+                                            {
+                                                //整数
+                                                //json_obj[f_info.key] = long.Parse(cell_str);
+                                                cur_obj[f_info.key] = long.Parse(cell_str);
+                                            }
+                                            break;
+                                        case E_FieldType.str:
+                                            cur_obj[f_info.key] = cell_str;
+                                            break;
                                     }
-                                    else
-                                    {
-                                        //json_obj[f_info.key] = false;
-                                        cur_obj[f_info.key] = false;
-                                    }
-                                    break;
-                                case E_FieldType.num:
-                                    if (cell_str.Contains('.'))
-                                    {
-                                        //有小数
-                                        //json_obj[f_info.key] = double.Parse(cell_str);
-                                        cur_obj[f_info.key] = double.Parse(cell_str);
-                                    }
-                                    else
-                                    {
-                                        //整数
-                                        //json_obj[f_info.key] = long.Parse(cell_str);
-                                        cur_obj[f_info.key]  = long.Parse(cell_str);
-                                    }
-                                    break;
-                                case E_FieldType.str:
-                                    cur_obj[f_info.key] = cell_str;
-                                    break;
+                                }
+
+                                
                             }
+                            
                         }
 
+                        //检查 cur_object
 
-                        main_arr.Add(cur_obj);
+                        if (flag)
+                        {
+                            main_arr.Add(cur_obj);
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("    [空行]");
+                        }
                     }
                 }
             }
