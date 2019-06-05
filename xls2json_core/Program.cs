@@ -245,10 +245,32 @@ namespace xls2json_core
                             //{
                             //    Console.WriteLine("不存在有效定义字段，index:" + j);
                             //}
-                            if (cell != null && dict_fieldInfo.ContainsKey(j))
+                            if (dict_fieldInfo.ContainsKey(j))
                             {
-                                var cell_str = cell.ToString();
                                 var f_info = dict_fieldInfo[j];
+                                string cell_str = "";
+                                if(cell == null)
+                                {
+                                    switch (f_info.type)
+                                    {
+                                        case E_FieldType.boolean:
+                                            cell_str = "false";
+                                            break;
+                                        case E_FieldType.num:
+                                            cell_str = "0";
+                                            break;
+                                        case E_FieldType.str:
+                                            cell_str = "";
+                                            break;
+                                        
+                                    }
+                                }
+                                else
+                                {
+                                    cell_str = cell.ToString();
+                                }
+                                //var 
+                                
                                 if (!string.IsNullOrEmpty(cell_str) && f_info.type != E_FieldType.unknow)
                                 {
                                     Console.WriteLine(f_info.key + ":" + cell_str);
