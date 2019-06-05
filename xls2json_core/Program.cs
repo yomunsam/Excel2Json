@@ -237,84 +237,114 @@ namespace xls2json_core
                         //Console.WriteLine("count:" + dict_fieldInfo.Count);
 
                         var flag = false; //只要下面的循环中，有任何一个字段不是空，则置为true
-                        for (int j = 0; j < thisRow.LastCellNum; j++)
+
+                        foreach(var item in dict_fieldInfo)
                         {
-                            
-                            var cell = thisRow.GetCell(j);
-                            //if (!dict_fieldInfo.ContainsKey(j))
-                            //{
-                            //    Console.WriteLine("不存在有效定义字段，index:" + j);
-                            //}
-                            if (dict_fieldInfo.ContainsKey(j))
+                            var cell = thisRow.GetCell(item.Key);
+                            string cell_str = cell?.ToString();
+                            var f_info = item.Value;
+                            if (cell == null)
                             {
-                                var f_info = dict_fieldInfo[j];
-                                string cell_str = "";
-                                if(cell == null)
+                                //Console.WriteLine("含有空记录");
+                                switch (item.Value.type)
                                 {
-                                    switch (f_info.type)
-                                    {
-                                        case E_FieldType.boolean:
-                                            cell_str = "false";
-                                            break;
-                                        case E_FieldType.num:
-                                            cell_str = "0";
-                                            break;
-                                        case E_FieldType.str:
-                                            cell_str = "";
-                                            break;
-                                        
-                                    }
+                                    case E_FieldType.boolean:
+                                        cell_str = "false";
+                                        break;
+                                    case E_FieldType.num:
+                                        cell_str = "0";
+                                        break;
+                                    case E_FieldType.str:
+                                        cell_str = "";
+                                        break;
                                 }
-                                else
-                                {
-                                    cell_str = cell.ToString();
-                                }
-                                //var 
-                                
-                                if (!string.IsNullOrEmpty(cell_str) && f_info.type != E_FieldType.unknow)
-                                {
-                                    Console.WriteLine(f_info.key + ":" + cell_str);
-                                    flag = true;
-                                    switch (f_info.type)
-                                    {
-                                        case E_FieldType.boolean:
+                                //Console.WriteLine("    设置默认值：" + cell_str);
 
-                                            if (cell_str.ToLower() == "true")
-                                            {
-                                                //json_obj[f_info.key] = true;
-                                                cur_obj[f_info.key] = true;
-                                            }
-                                            else
-                                            {
-                                                //json_obj[f_info.key] = false;
-                                                cur_obj[f_info.key] = false;
-                                            }
-                                            break;
-                                        case E_FieldType.num:
-
-                                            if (cell_str.Contains('.'))
-                                            {
-                                                //有小数
-                                                //json_obj[f_info.key] = double.Parse(cell_str);
-                                                cur_obj[f_info.key] = double.Parse(cell_str);
-                                            }
-                                            else
-                                            {
-                                                //整数
-                                                //json_obj[f_info.key] = long.Parse(cell_str);
-                                                cur_obj[f_info.key] = long.Parse(cell_str);
-                                            }
-                                            break;
-                                        case E_FieldType.str:
-                                            cur_obj[f_info.key] = cell_str;
-                                            break;
-                                    }
-                                }
-
-                                
                             }
-                            
+                            if (cell_str != null && f_info.type != E_FieldType.unknow)
+                            {
+                                Console.WriteLine(f_info.key + ":" + cell_str);
+                                flag = true;
+                                switch (f_info.type)
+                                {
+                                    case E_FieldType.boolean:
+
+                                        if (cell_str.ToLower() == "true")
+                                        {
+                                            //json_obj[f_info.key] = true;
+                                            cur_obj[f_info.key] = true;
+                                        }
+                                        else
+                                        {
+                                            //json_obj[f_info.key] = false;
+                                            cur_obj[f_info.key] = false;
+                                        }
+                                        break;
+                                    case E_FieldType.num:
+
+                                        if (cell_str.Contains('.'))
+                                        {
+                                            //有小数
+                                            //json_obj[f_info.key] = double.Parse(cell_str);
+                                            cur_obj[f_info.key] = double.Parse(cell_str);
+                                        }
+                                        else
+                                        {
+                                            //整数
+                                            //json_obj[f_info.key] = long.Parse(cell_str);
+                                            cur_obj[f_info.key] = long.Parse(cell_str);
+                                        }
+                                        break;
+                                    case E_FieldType.str:
+                                        cur_obj[f_info.key] = cell_str;
+                                        break;
+                                }
+                            }
                         }
+
+                        //for (int j = 0; j < thisRow.LastCellNum; j++)
+                        //{
+
+                        //    var cell = thisRow.GetCell(j);
+                        //    //if (!dict_fieldInfo.ContainsKey(j))
+                        //    //{
+                        //    //    Console.WriteLine("不存在有效定义字段，index:" + j);
+                        //    //}
+                        //    if (dict_fieldInfo.ContainsKey(j))
+                        //    {
+                        //        Console.WriteLine("喵");
+                        //        var f_info = dict_fieldInfo[j];
+                        //        string cell_str = "";
+                        //        if(cell == null)
+                        //        {
+                        //            Console.WriteLine("含有空记录");
+                        //            switch (f_info.type)
+                        //            {
+                        //                case E_FieldType.boolean:
+                        //                    cell_str = "false";
+                        //                    break;
+                        //                case E_FieldType.num:
+                        //                    cell_str = "0";
+                        //                    break;
+                        //                case E_FieldType.str:
+                        //                    cell_str = "";
+                        //                    break;
+                        //            }
+                        //            Console.WriteLine("    设置默认值：" + cell_str);
+
+                        //        }
+                        //        else
+                        //        {
+                        //            cell_str = cell.ToString();
+                        //        }
+                        //        //var 
+
+
+
+
+                        //    }
+
+                        //}
 
                         //检查 cur_object
 

@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <StartupObject>xls2json_core.Program</StartupObject>
+    <AssemblyName>xls2json</AssemblyName>
     <!-- <RuntimeIdentifier>win10-x64</RuntimeIdentifier> -->
   </PropertyGroup>
 
